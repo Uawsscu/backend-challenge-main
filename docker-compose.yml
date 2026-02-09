@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: user-api-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: userdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - user-api-network
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: user-api-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - user-api-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/userdb
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - JWT_SECRET=yeVuvvtTsI5CRc7E7n+rbC7p6PTTrv7hIwp8v2Yxb3Y=
+      - JWT_ACCESS_TOKEN_SEC=900
+      - JWT_REFRESH_TOKEN_SEC=2592000
+      - SERVER_PORT=8080
+      - LOG_LEVEL=info
+    volumes:
+      - .:/app
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - user-api-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  user-api-network:
+    driver: bridge
