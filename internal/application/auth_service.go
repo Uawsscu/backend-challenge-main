@@ -51,7 +51,7 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 		return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
 	}
 	if !validator.ValidatePassword(password) {
-		return nil, fmt.Errorf("%w: password must be at least 6 characters", domain.ErrRequestInvalid)
+		return nil, fmt.Errorf("%w: password must be at least 8 characters and include uppercase, lowercase, number, and special character", domain.ErrRequestInvalid)
 	}
 
 	// Hash password

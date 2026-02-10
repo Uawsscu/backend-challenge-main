@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "03e73be6-1745-4632-98ef-42330a51fdaa",
+    "_postman_id": "fea0e237-d71d-456d-be4d-817b63bb031b",
     "name": "Backend-Challenge",
     "description": "API collection for testing the Lottery Search System (Part 2), including hot-pattern Redis optimization.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "49317580",
-    "_collection_link": "https://go.postman.co/collection/49317580-03e73be6-1745-4632-98ef-42330a51fdaa?source=collection_link"
+    "_exporter_id": "52276801",
+    "_collection_link": "https://go.postman.co/collection/52276801-fea0e237-d71d-456d-be4d-817b63bb031b?source=collection_link"
   },
   "item": [
     {
@@ -23,11 +23,19 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
+                  "pm.test(\"Verify user registration response\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"id\");",
+                  "    pm.expect(jsonData).to.have.property(\"email\");",
+                  "    pm.expect(jsonData).to.have.property(\"createdAt\");",
+                  "});",
+                  "",
                   "if (jsonData.email) {",
                   "    pm.collectionVariables.set(\"email\", jsonData.email);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -36,7 +44,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Lottery User\",\n    \"email\": \"lottery_{{$timestamp}}@example.com\",\n    \"password\": \"password123\"\n}",
+              "raw": "{\n    \"name\": \"Lottery User\",\n    \"email\": \"lottery_{{$timestamp}}@example.com\",\n    \"password\": \"P@ssw0rd\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -70,7 +78,12 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
-                  "if (jsonData) {",
+                  "pm.test(\"Verify login tokens\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"accessToken\");",
+                  "    pm.expect(jsonData).to.have.property(\"refreshToken\");",
+                  "});",
+                  "",
+                  "if (jsonData.accessToken) {",
                   "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
                   "    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
                   "}"
@@ -86,7 +99,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"password123\"\n}",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"P@ssw0rd\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -120,7 +133,12 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
-                  "if (jsonData) {",
+                  "pm.test(\"Verify token refresh\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"accessToken\");",
+                  "    pm.expect(jsonData).to.have.property(\"refreshToken\");",
+                  "});",
+                  "",
+                  "if (jsonData.accessToken) {",
                   "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
                   "    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
                   "}"
@@ -175,15 +193,9 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
-                  "if (jsonData.accessToken) {",
-                  "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
-                  "}",
-                  "if (jsonData.user && jsonData.user.email) {",
-                  "    pm.collectionVariables.set(\"email\", jsonData.user.email);",
-                  "}",
-                  "if (jsonData.user && jsonData.user.id) {",
-                  "    pm.collectionVariables.set(\"userId\", jsonData.user.id);",
-                  "}"
+                  "pm.test(\"Verify logout message\", function () {",
+                  "    pm.expect(jsonData.message).to.eql(\"Logged out successfully\");",
+                  "});"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -234,6 +246,116 @@
       "name": "Users",
       "item": [
         {
+          "name": "auth: register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Verify user registration response\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"id\");",
+                  "    pm.expect(jsonData).to.have.property(\"email\");",
+                  "    pm.expect(jsonData).to.have.property(\"createdAt\");",
+                  "});",
+                  "",
+                  "if (jsonData.email) {",
+                  "    pm.collectionVariables.set(\"email\", jsonData.email);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Lottery User\",\n    \"email\": \"lottery_{{$timestamp}}@example.com\",\n    \"password\": \"P@ssw0rd\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "auth: login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Verify login tokens\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"accessToken\");",
+                  "    pm.expect(jsonData).to.have.property(\"refreshToken\");",
+                  "});",
+                  "",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
+                  "    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"P@ssw0rd\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "user: create",
           "event": [
             {
@@ -245,14 +367,19 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
+                  "pm.test(\"Verify user creation\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"id\");",
+                  "    pm.expect(jsonData).to.have.property(\"name\");",
+                  "    pm.expect(jsonData).to.have.property(\"email\");",
+                  "});",
+                  "",
                   "if (jsonData.id) {",
                   "    pm.collectionVariables.set(\"createdUserId\", jsonData.id);",
-                  "}",
-                  "if (jsonData.email) {",
-                  "    pm.collectionVariables.set(\"email\", jsonData.email);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -271,7 +398,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Another User\",\n    \"email\": \"user_{{$timestamp}}@example.com\",\n    \"password\": \"password123\"\n}",
+              "raw": "{\n    \"name\": \"Another User\",\n    \"email\": \"user_{{$timestamp}}@example.com\",\n    \"password\": \"P@ssw0rd\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -301,6 +428,11 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () {",
                   "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Verify user list\", function () {",
+                  "    pm.expect(jsonData).to.be.an(\"array\");",
                   "});"
                 ],
                 "type": "text/javascript",
@@ -348,9 +480,10 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
-                  "if (jsonData.email) {",
-                  "    pm.collectionVariables.set(\"email\", jsonData.email);",
-                  "}"
+                  "pm.test(\"Verify user details\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"id\");",
+                  "    pm.expect(jsonData.email).to.be.a(\"string\");",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -396,9 +529,9 @@
                   "});",
                   "",
                   "var jsonData = pm.response.json();",
-                  "if (jsonData.email) {",
-                  "    pm.collectionVariables.set(\"email\", jsonData.email);",
-                  "}"
+                  "pm.test(\"Verify updated user name\", function () {",
+                  "    pm.expect(jsonData.name).to.eql(\"Updated Name\");",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -450,6 +583,11 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () {",
                   "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Verify deletion message\", function () {",
+                  "    pm.expect(jsonData.message).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -494,6 +632,21 @@
           "item": [
             {
               "name": "Invalid Pattern: Too short",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 500\", function () {",
+                      "    pm.response.to.have.status(500);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
               "request": {
                 "auth": {
                   "type": "bearer",
@@ -530,6 +683,21 @@
             },
             {
               "name": "Invalid Pattern: Illegal chars",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 500\", function () {",
+                      "    pm.response.to.have.status(500);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
               "request": {
                 "auth": {
                   "type": "bearer",
@@ -566,6 +734,21 @@
             },
             {
               "name": "Unauthorized Search",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
               "request": {
                 "method": "GET",
                 "header": [],
@@ -594,6 +777,28 @@
         },
         {
           "name": "Search Pattern: End with 23 (****23)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Lottery search result structure\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"pattern\");",
+                  "    pm.expect(jsonData).to.have.property(\"results\");",
+                  "    pm.expect(jsonData).to.have.property(\"count\");",
+                  "    pm.expect(jsonData.results).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -631,6 +836,28 @@
         },
         {
           "name": "Search Pattern: Start 1, End 5 (1****5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Lottery search result structure\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"pattern\");",
+                  "    pm.expect(jsonData).to.have.property(\"results\");",
+                  "    pm.expect(jsonData).to.have.property(\"count\");",
+                  "    pm.expect(jsonData.results).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -668,6 +895,28 @@
         },
         {
           "name": "Search Pattern: Start with 123 (123***)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Lottery search result structure\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"pattern\");",
+                  "    pm.expect(jsonData).to.have.property(\"results\");",
+                  "    pm.expect(jsonData).to.have.property(\"count\");",
+                  "    pm.expect(jsonData.results).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -705,6 +954,28 @@
         },
         {
           "name": "Search Pattern: Exact (123456)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Lottery search result structure\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"pattern\");",
+                  "    pm.expect(jsonData).to.have.property(\"results\");",
+                  "    pm.expect(jsonData).to.have.property(\"count\");",
+                  "    pm.expect(jsonData.results).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -742,6 +1013,28 @@
         },
         {
           "name": "Search Pattern: Wildcard All (******)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Lottery search result structure\", function () {",
+                  "    pm.expect(jsonData).to.have.property(\"pattern\");",
+                  "    pm.expect(jsonData).to.have.property(\"results\");",
+                  "    pm.expect(jsonData).to.have.property(\"count\");",
+                  "    pm.expect(jsonData.results).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",

@@ -17,8 +17,36 @@ func ValidateRequired(value string) bool {
 	return strings.TrimSpace(value) != ""
 }
 
-// ValidatePassword checks if password meets minimum requirements
+// ValidatePassword checks if password meets minimum requirements:
+// - At least 8 characters
+// - At least one uppercase letter
+// - At least one lowercase letter
+// - At least one digit
+// - At least one special character
 func ValidatePassword(password string) bool {
-	// At least 6 characters
-	return len(password) >= 6
+	if len(password) < 8 {
+		return false
+	}
+
+	var (
+		hasUpper   = false
+		hasLower   = false
+		hasNumber  = false
+		hasSpecial = false
+	)
+
+	for _, char := range password {
+		switch {
+		case 'a' <= char && char <= 'z':
+			hasLower = true
+		case 'A' <= char && char <= 'Z':
+			hasUpper = true
+		case '0' <= char && char <= '9':
+			hasNumber = true
+		case strings.ContainsAny(string(char), "!@#$%^&*()_+-=[]{}|;:,.<>?"):
+			hasSpecial = true
+		}
+	}
+
+	return hasUpper && hasLower && hasNumber && hasSpecial
 }
