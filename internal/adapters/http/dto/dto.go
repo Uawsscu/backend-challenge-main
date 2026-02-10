@@ -12,9 +12,8 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken  string        `json:"accessToken"`
-	RefreshToken string        `json:"refreshToken"`
-	User         *UserResponse `json:"user"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 type UserResponse struct {

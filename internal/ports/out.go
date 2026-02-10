@@ -21,8 +21,6 @@ type SessionManager interface {
 	StoreSession(ctx context.Context, key string, data interface{}, ttl time.Duration) error
 	GetSession(ctx context.Context, key string) (string, error)
 	DeleteSession(ctx context.Context, key string) error
-	BlacklistToken(ctx context.Context, tokenID string, ttl time.Duration) error
-	IsTokenBlacklisted(ctx context.Context, tokenID string) (bool, error)
 }
 
 type TokenService interface {

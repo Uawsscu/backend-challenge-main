@@ -44,20 +44,3 @@ func (s *SessionManager) DeleteSession(ctx context.Context, key string) error {
 	fullKey := fmt.Sprintf("session:%s", key)
 	return s.client.Del(ctx, fullKey).Err()
 }
-
-func (s *SessionManager) BlacklistToken(ctx context.Context, tokenID string, ttl time.Duration) error {
-	key := fmt.Sprintf("blacklist:%s", tokenID)
-	return s.client.Set(ctx, key, "blacklisted", ttl).Err()
-}
-
-func (s *SessionManager) IsTokenBlacklisted(ctx context.Context, tokenID string) (bool, error) {
-	key := fmt.Sprintf("blacklist:%s", tokenID)
-	result, err := s.client.Get(ctx, key).Result()
-	if err == redis.Nil {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return result == "blacklisted", nil
-}

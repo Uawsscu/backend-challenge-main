@@ -73,30 +73,30 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 	return user, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, *domain.User, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, error) {
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
-			return "", "", nil, domain.ErrInvalidCredentials
+			return "", "", domain.ErrInvalidCredentials
 		}
-		return "", "", nil, err
+		return "", "", err
 	}
 
 	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", "", nil, domain.ErrInvalidCredentials
+		return "", "", domain.ErrInvalidCredentials
 	}
 
 	// Generate Access Token
 	accessToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getAccessTokenTTL())
 	if err != nil {
-		return "", "", nil, fmt.Errorf("failed to generate access token: %w", err)
+		return "", "", fmt.Errorf("failed to generate access token: %w", err)
 	}
 
 	// Generate Refresh Token
 	refreshToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getRefreshTokenTTL())
 	if err != nil {
-		return "", "", nil, fmt.Errorf("failed to generate refresh token: %w", err)
+		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
 	// Extract token IDs to store in Redis
@@ -110,7 +110,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 	accessKey := fmt.Sprintf("access:%s", accessClaims.Subject)
 	if err := s.sessionManager.StoreSession(ctx, accessKey, accessSession, s.getAccessTokenTTL()); err != nil {
-		return "", "", nil, fmt.Errorf("failed to store access session: %w", err)
+		return "", "", fmt.Errorf("failed to store access session: %w", err)
 	}
 
 	refreshSession := &refreshTokenSessionDTO{
@@ -119,10 +119,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 	refreshKey := fmt.Sprintf("refresh:%s", refreshClaims.Subject)
 	if err := s.sessionManager.StoreSession(ctx, refreshKey, refreshSession, s.getRefreshTokenTTL()); err != nil {
-		return "", "", nil, fmt.Errorf("failed to store refresh session: %w", err)
+		return "", "", fmt.Errorf("failed to store refresh session: %w", err)
 	}
 
-	return accessToken, refreshToken, user, nil
+	return accessToken, refreshToken, nil
 }
 
 func (s *AuthService) Logout(ctx context.Context, token string) error {
@@ -148,10 +148,6 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 		return err
 	}
 
-	if err := s.sessionManager.BlacklistToken(ctx, claims.Subject, s.getAccessTokenTTL()); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -159,14 +155,6 @@ func (s *AuthService) ValidateToken(ctx context.Context, token string) (*domain.
 	claims, err := s.tokenService.ValidateToken(token)
 	if err != nil {
 		return nil, "", err
-	}
-
-	blacklisted, err := s.sessionManager.IsTokenBlacklisted(ctx, claims.Subject)
-	if err != nil {
-		return nil, "", err
-	}
-	if blacklisted {
-		return nil, "", domain.ErrTokenBlacklisted
 	}
 
 	accessKey := fmt.Sprintf("access:%s", claims.Subject)

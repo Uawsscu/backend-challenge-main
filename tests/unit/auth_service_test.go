@@ -115,7 +115,7 @@ func TestAuthService_Login(t *testing.T) {
 		}
 
 		service := application.NewAuthService(mockRepo, mockSession, mockToken)
-		accessToken, refreshToken, user, err := service.Login(context.Background(), "john@example.com", "password123")
+		accessToken, refreshToken, err := service.Login(context.Background(), "john@example.com", "password123")
 
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -125,9 +125,6 @@ func TestAuthService_Login(t *testing.T) {
 		}
 		if refreshToken == "" {
 			t.Errorf("expected refresh token but got empty string")
-		}
-		if user == nil {
-			t.Errorf("expected user but got nil")
 		}
 	})
 
@@ -145,7 +142,7 @@ func TestAuthService_Login(t *testing.T) {
 		}
 
 		service := application.NewAuthService(mockRepo, mockSession, mockToken)
-		_, _, _, err := service.Login(context.Background(), "john@example.com", "wrongpassword")
+		_, _, err := service.Login(context.Background(), "john@example.com", "wrongpassword")
 
 		if err != domain.ErrInvalidCredentials {
 			t.Errorf("expected ErrInvalidCredentials but got %v", err)
@@ -162,7 +159,7 @@ func TestAuthService_Login(t *testing.T) {
 		}
 
 		service := application.NewAuthService(mockRepo, mockSession, mockToken)
-		_, _, _, err := service.Login(context.Background(), "nonexistent@example.com", "password123")
+		_, _, err := service.Login(context.Background(), "nonexistent@example.com", "password123")
 
 		if err != domain.ErrInvalidCredentials {
 			t.Errorf("expected ErrInvalidCredentials but got %v", err)
@@ -182,10 +179,6 @@ func TestAuthService_ValidateToken(t *testing.T) {
 			}, nil
 		}
 
-		mockSession.IsTokenBlacklistedFunc = func(ctx context.Context, tokenID string) (bool, error) {
-			return false, nil
-		}
-
 		mockSession.GetSessionFunc = func(ctx context.Context, key string) (string, error) {
 			return `{"userId":"test-user-id","accessToken":"valid-token","refreshToken":"refresh-token"}`, nil
 		}
@@ -201,29 +194,6 @@ func TestAuthService_ValidateToken(t *testing.T) {
 		}
 		if userID != "test-user-id" {
 			t.Errorf("expected userID test-user-id but got %s", userID)
-		}
-	})
-
-	t.Run("blacklisted token", func(t *testing.T) {
-		mockRepo := &mocks.MockUserRepository{}
-		mockSession := &mocks.MockSessionManager{}
-		mockToken := &mocks.MockTokenService{}
-
-		mockToken.ValidateTokenFunc = func(tokenString string) (*domain.TokenClaims, error) {
-			return &domain.TokenClaims{
-				Subject: "token-id",
-			}, nil
-		}
-
-		mockSession.IsTokenBlacklistedFunc = func(ctx context.Context, tokenID string) (bool, error) {
-			return true, nil
-		}
-
-		service := application.NewAuthService(mockRepo, mockSession, mockToken)
-		_, _, err := service.ValidateToken(context.Background(), "blacklisted-token")
-
-		if err != domain.ErrTokenBlacklisted {
-			t.Errorf("expected ErrTokenBlacklisted but got %v", err)
 		}
 	})
 }

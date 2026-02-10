@@ -52,7 +52,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	accessToken, refreshToken, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.Error(err)
 		return
@@ -61,12 +61,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, &dto.LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User: &dto.UserResponse{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		},
 	})
 }
 
@@ -80,7 +74,6 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	// Remove "Bearer " prefix
 	if len(token) > 7 && token[:7] == "Bearer " {
 		token = token[7:]
 	}
