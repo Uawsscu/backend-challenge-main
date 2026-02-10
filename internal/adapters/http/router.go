@@ -10,6 +10,7 @@ import (
 func SetupRouter(
 	userService ports.UserService,
 	authService ports.AuthService,
+	lotteryService ports.LotteryService,
 ) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -18,6 +19,7 @@ func SetupRouter(
 
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
+	lotteryHandler := handler.NewLotteryHandler(lotteryService)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -36,6 +38,12 @@ func SetupRouter(
 			users.GET("/:id", userHandler.GetUser)
 			users.PUT("/:id", userHandler.UpdateUser)
 			users.DELETE("/:id", userHandler.DeleteUser)
+		}
+
+		lotteries := v1.Group("/lotteries")
+		lotteries.Use(middleware.AuthMiddleware(authService))
+		{
+			lotteries.GET("/search", lotteryHandler.Search)
 		}
 	}
 

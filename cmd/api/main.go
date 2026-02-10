@@ -58,19 +58,30 @@ func main() {
 	// Initialize repositories and services
 	db := mongoClient.Database("userdb")
 	userRepo := mongodb.NewUserRepository(db)
+	lotteryRepo := mongodb.NewLotteryRepository(db, rdb)
 	sessionManager := redis.NewSessionManager(rdb)
 	tokenService := jwt.NewTokenService(cfg.JWTSecret, cfg.JWTAccessTokenSec, cfg.JWTRefreshTokenSec)
 
 	userService := application.NewUserService(userRepo)
 	authService := application.NewAuthService(userRepo, sessionManager, tokenService)
+	lotteryService := application.NewLotteryService(lotteryRepo)
 
-	// Start background goroutine for user count logging
+	// Seed lottery tickets if they don't exist
+	go func() {
+		seedTimeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Hour)
+		defer cancel()
+		if err := lotteryRepo.SeedTickets(seedTimeoutCtx, 1000000); err != nil {
+			logger.Error("Failed to seed lottery tickets", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+	}()
+
+	// ข้อ 6. Concurrency Task
+	// Run a background goroutine every 10 seconds to log the total number of users in the database.
 	go logUserCountPeriodically(ctx, userService)
+	router := httpHandler.SetupRouter(userService, authService, lotteryService)
 
-	// Setup HTTP router
-	router := httpHandler.SetupRouter(userService, authService)
-
-	// Create HTTP server
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", cfg.ServerPort),
 		Handler: router,

@@ -21,3 +21,8 @@ type AuthService interface {
 	Logout(ctx context.Context, token string) error
 	ValidateToken(ctx context.Context, token string) (*domain.TokenClaims, string, error)
 }
+
+type LotteryService interface {
+	SearchLottery(ctx context.Context, pattern string, userID string) ([]domain.LotteryTicket, error)
+	GetLotteryCount(ctx context.Context) (int64, error)
+}
