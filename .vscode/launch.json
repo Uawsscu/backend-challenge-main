@@ -1,0 +1,36 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch API",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/api/main.go",
+            "env": {
+                "MONGODB_URI": "mongodb://localhost:27017/userdb",
+                "REDIS_HOST": "localhost",
+                "REDIS_PORT": "6379",
+                "REDIS_PASSWORD": "",
+                "JWT_SECRET": "yeVuvvtTsI5CRc7E7n+rbC7p6PTTrv7hIwp8v2Yxb3Y=",
+                "JWT_ACCESS_TOKEN_SEC": "900",
+                "JWT_REFRESH_TOKEN_SEC": "2592000",
+                "SERVER_PORT": "8080",
+                "LOG_LEVEL": "debug"
+            }
+        },
+        {
+            "name": "Seed Lottery",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/seed/main.go",
+            "env": {
+                "MONGODB_URI": "mongodb://localhost:27017/userdb",
+                "REDIS_HOST": "localhost",
+                "REDIS_PORT": "6379",
+                "REDIS_PASSWORD": ""
+            }
+        }
+    ]
+}
