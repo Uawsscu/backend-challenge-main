@@ -42,9 +42,9 @@ docker-compose up -d
 ![alt text](image.png)
 หรือดูคู่มือการใช้งานแบบละเอียดได้ที่:
 
-- [📄 Auth API Specification (PDF)](api-spec-auth.pdf)
-- [📄 User Management API Specification (PDF)](api-spec-user.pdf)
-- [📄 Lottery Search API Specification (PDF)](api-spec-lottery.pdf)
+- [📄 Auth API Specification (PDF)](api-spec/api-spec-auth.pdf)
+- [📄 User Management API Specification (PDF)](api-spec/api-spec-user.pdf)
+- [📄 Lottery Search API Specification (PDF)](api-spec/api-spec-lottery.pdf)
 
 
 ## 5. Assumptions และ Design Decisions
