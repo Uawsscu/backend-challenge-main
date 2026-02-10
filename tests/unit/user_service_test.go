@@ -2,6 +2,7 @@ package unit
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func TestUserService_CreateUser(t *testing.T) {
 			name:     "successful user creation",
 			userName: "John Doe",
 			email:    "john@example.com",
-			password: "password123",
+			password: "Password123!",
 			mockSetup: func(repo *mocks.MockUserRepository) {
 				repo.CreateFunc = func(ctx context.Context, user *domain.User) error {
 					user.ID = "test-id-123"
@@ -56,7 +57,7 @@ func TestUserService_CreateUser(t *testing.T) {
 			name:     "email already exists",
 			userName: "John Doe",
 			email:    "john@example.com",
-			password: "password123",
+			password: "Password123!",
 			mockSetup: func(repo *mocks.MockUserRepository) {
 				repo.CreateFunc = func(ctx context.Context, user *domain.User) error {
 					return domain.ErrEmailAlreadyExists
@@ -193,6 +194,120 @@ func TestUserService_DeleteUser(t *testing.T) {
 		err := service.DeleteUser(context.Background(), "nonexistent-id")
 		if err != domain.ErrUserNotFound {
 			t.Errorf("expected ErrUserNotFound but got %v", err)
+		}
+	})
+}
+
+func TestUserService_ListUsers(t *testing.T) {
+	mockRepo := &mocks.MockUserRepository{}
+	service := application.NewUserService(mockRepo)
+
+	t.Run("successful list", func(t *testing.T) {
+		expectedUsers := []*domain.User{
+			{ID: "1", Name: "User 1"},
+			{ID: "2", Name: "User 2"},
+		}
+
+		mockRepo.FindAllFunc = func(ctx context.Context) ([]*domain.User, error) {
+			return expectedUsers, nil
+		}
+
+		users, err := service.ListUsers(context.Background())
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(users) != 2 {
+			t.Errorf("expected 2 users but got %d", len(users))
+		}
+	})
+}
+
+func TestUserService_GetUserCount(t *testing.T) {
+	mockRepo := &mocks.MockUserRepository{}
+	service := application.NewUserService(mockRepo)
+
+	t.Run("successful count", func(t *testing.T) {
+		mockRepo.CountFunc = func(ctx context.Context) (int64, error) {
+			return 50, nil
+		}
+
+		count, err := service.GetUserCount(context.Background())
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if count != 50 {
+			t.Errorf("expected count 50 but got %d", count)
+		}
+	})
+
+	t.Run("repository error", func(t *testing.T) {
+		mockRepo.CountFunc = func(ctx context.Context) (int64, error) {
+			return 0, errors.New("db error")
+		}
+
+		_, err := service.GetUserCount(context.Background())
+		if err == nil {
+			t.Error("expected error but got nil")
+		}
+	})
+}
+
+func TestUserService_RepositoryErrors(t *testing.T) {
+	mockRepo := &mocks.MockUserRepository{}
+	service := application.NewUserService(mockRepo)
+	ctx := context.Background()
+	dbErr := errors.New("db error")
+
+	t.Run("CreateUser repo error", func(t *testing.T) {
+		mockRepo.CreateFunc = func(ctx context.Context, user *domain.User) error {
+			return dbErr
+		}
+		_, err := service.CreateUser(ctx, "Name", "test@example.com", "Password123!")
+		if err != dbErr {
+			t.Errorf("expected %v but got %v", dbErr, err)
+		}
+	})
+
+	t.Run("GetUserByID repo error", func(t *testing.T) {
+		mockRepo.FindByIDFunc = func(ctx context.Context, id string) (*domain.User, error) {
+			return nil, dbErr
+		}
+		_, err := service.GetUserByID(ctx, "id")
+		if err != dbErr {
+			t.Errorf("expected %v but got %v", dbErr, err)
+		}
+	})
+
+	t.Run("UpdateUser find error", func(t *testing.T) {
+		mockRepo.FindByIDFunc = func(ctx context.Context, id string) (*domain.User, error) {
+			return nil, dbErr
+		}
+		_, err := service.UpdateUser(ctx, "id", "Name", "email@test.com")
+		if err != dbErr {
+			t.Errorf("expected %v but got %v", dbErr, err)
+		}
+	})
+
+	t.Run("UpdateUser update error", func(t *testing.T) {
+		mockRepo.FindByIDFunc = func(ctx context.Context, id string) (*domain.User, error) {
+			return &domain.User{ID: id}, nil
+		}
+		mockRepo.UpdateFunc = func(ctx context.Context, user *domain.User) error {
+			return dbErr
+		}
+		_, err := service.UpdateUser(ctx, "id", "Name", "email@test.com")
+		if err != dbErr {
+			t.Errorf("expected %v but got %v", dbErr, err)
+		}
+	})
+
+	t.Run("ListUsers error", func(t *testing.T) {
+		mockRepo.FindAllFunc = func(ctx context.Context) ([]*domain.User, error) {
+			return nil, dbErr
+		}
+		_, err := service.ListUsers(ctx)
+		if err != dbErr {
+			t.Errorf("expected %v but got %v", dbErr, err)
 		}
 	})
 }

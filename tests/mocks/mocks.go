@@ -113,3 +113,46 @@ func (m *MockTokenService) ValidateToken(tokenString string) (*domain.TokenClaim
 		Subject: "test-token-id",
 	}, nil
 }
+
+type MockLotteryRepository struct {
+	SearchAndReserveFunc func(ctx context.Context, pattern string, userID string, limit int) ([]domain.LotteryTicket, error)
+	UpsertManyFunc       func(ctx context.Context, tickets []domain.LotteryTicket) error
+	MarkAsSoldFunc       func(ctx context.Context, ticketID string, userID string) error
+	CountFunc            func(ctx context.Context) (int64, error)
+	SeedTicketsFunc      func(ctx context.Context, total int) error
+}
+
+func (m *MockLotteryRepository) SearchAndReserve(ctx context.Context, pattern string, userID string, limit int) ([]domain.LotteryTicket, error) {
+	if m.SearchAndReserveFunc != nil {
+		return m.SearchAndReserveFunc(ctx, pattern, userID, limit)
+	}
+	return []domain.LotteryTicket{}, nil
+}
+
+func (m *MockLotteryRepository) UpsertMany(ctx context.Context, tickets []domain.LotteryTicket) error {
+	if m.UpsertManyFunc != nil {
+		return m.UpsertManyFunc(ctx, tickets)
+	}
+	return nil
+}
+
+func (m *MockLotteryRepository) MarkAsSold(ctx context.Context, ticketID string, userID string) error {
+	if m.MarkAsSoldFunc != nil {
+		return m.MarkAsSoldFunc(ctx, ticketID, userID)
+	}
+	return nil
+}
+
+func (m *MockLotteryRepository) Count(ctx context.Context) (int64, error) {
+	if m.CountFunc != nil {
+		return m.CountFunc(ctx)
+	}
+	return 0, nil
+}
+
+func (m *MockLotteryRepository) SeedTickets(ctx context.Context, total int) error {
+	if m.SeedTicketsFunc != nil {
+		return m.SeedTicketsFunc(ctx, total)
+	}
+	return nil
+}

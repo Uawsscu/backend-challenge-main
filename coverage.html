@@ -1,0 +1,722 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>jwt: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/backend-challenge/user-api/internal/adapters/jwt/token_service.go (86.4%)</option>
+				
+				<option value="file1">github.com/backend-challenge/user-api/internal/adapters/redis/session_manager.go (86.7%)</option>
+				
+				<option value="file2">github.com/backend-challenge/user-api/internal/application/auth_service.go (87.2%)</option>
+				
+				<option value="file3">github.com/backend-challenge/user-api/internal/application/lottery_service.go (100.0%)</option>
+				
+				<option value="file4">github.com/backend-challenge/user-api/internal/application/user_service.go (86.7%)</option>
+				
+				<option value="file5">github.com/backend-challenge/user-api/internal/domain/errors.go (100.0%)</option>
+				
+				<option value="file6">github.com/backend-challenge/user-api/pkg/validator/validator.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package jwt
+
+import (
+        "fmt"
+        "time"
+
+        "github.com/backend-challenge/user-api/internal/domain"
+        "github.com/golang-jwt/jwt/v5"
+        "github.com/google/uuid"
+)
+
+type TokenService struct {
+        secretKey            string
+        accessTokenDuration  time.Duration
+        refreshTokenDuration time.Duration
+}
+
+func NewTokenService(secretKey string, accessSec, refreshSec int) *TokenService <span class="cov8" title="1">{
+        return &amp;TokenService{
+                secretKey:            secretKey,
+                accessTokenDuration:  time.Duration(accessSec) * time.Second,
+                refreshTokenDuration: time.Duration(refreshSec) * time.Second,
+        }
+}</span>
+
+type Claims struct {
+        jwt.RegisteredClaims
+}
+
+func (t *TokenService) GenerateToken(userID, email string, duration time.Duration) (string, error) <span class="cov8" title="1">{
+        tokenID := uuid.New().String()
+        expirationTime := time.Now().Add(duration)
+
+        claims := &amp;Claims{
+                RegisteredClaims: jwt.RegisteredClaims{
+                        Subject:   tokenID, // Use tokenID as sub
+                        ExpiresAt: jwt.NewNumericDate(expirationTime),
+                        IssuedAt:  jwt.NewNumericDate(time.Now()),
+                },
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        tokenString, err := token.SignedString([]byte(t.secretKey))
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">return tokenString, nil</span>
+}
+
+func (t *TokenService) ValidateToken(tokenString string) (*domain.TokenClaims, error) <span class="cov8" title="1">{
+        claims := &amp;Claims{}
+
+        token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+                }</span>
+                <span class="cov8" title="1">return []byte(t.secretKey), nil</span>
+        })
+
+        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                return nil, domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">if !token.Valid </span><span class="cov0" title="0">{
+                return nil, domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">sub, _ := claims.GetSubject()
+        return &amp;domain.TokenClaims{
+                Subject:   sub,
+                ExpiresAt: claims.ExpiresAt.Unix(),
+        }, nil</span>
+}
+
+func (t *TokenService) GetAccessTokenDuration() time.Duration <span class="cov8" title="1">{
+        return t.accessTokenDuration
+}</span>
+
+func (t *TokenService) GetRefreshTokenDuration() time.Duration <span class="cov8" title="1">{
+        return t.refreshTokenDuration
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package redis
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "time"
+
+        "github.com/redis/go-redis/v9"
+)
+
+type SessionManager struct {
+        client *redis.Client
+}
+
+func NewSessionManager(client *redis.Client) *SessionManager <span class="cov8" title="1">{
+        return &amp;SessionManager{
+                client: client,
+        }
+}</span>
+
+func (s *SessionManager) StoreSession(ctx context.Context, key string, data interface{}, ttl time.Duration) error <span class="cov8" title="1">{
+        fullKey := fmt.Sprintf("session:%s", key)
+        jsonData, err := json.Marshal(data)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to marshal session data: %w", err)
+        }</span>
+        <span class="cov8" title="1">return s.client.Set(ctx, fullKey, jsonData, ttl).Err()</span>
+}
+
+func (s *SessionManager) GetSession(ctx context.Context, key string) (string, error) <span class="cov8" title="1">{
+        fullKey := fmt.Sprintf("session:%s", key)
+        result, err := s.client.Get(ctx, fullKey).Result()
+        if err == redis.Nil </span><span class="cov8" title="1">{
+                return "", nil
+        }</span>
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov8" title="1">return result, nil</span>
+}
+
+func (s *SessionManager) DeleteSession(ctx context.Context, key string) error <span class="cov8" title="1">{
+        fullKey := fmt.Sprintf("session:%s", key)
+        return s.client.Del(ctx, fullKey).Err()
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package application
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "time"
+
+        "github.com/backend-challenge/user-api/internal/adapters/jwt"
+        "github.com/backend-challenge/user-api/internal/domain"
+        "github.com/backend-challenge/user-api/internal/ports"
+        "github.com/backend-challenge/user-api/pkg/validator"
+        "golang.org/x/crypto/bcrypt"
+)
+
+type AuthService struct {
+        userRepo       ports.UserRepository
+        sessionManager ports.SessionManager
+        tokenService   ports.TokenService
+}
+
+type accessTokenSessionDTO struct {
+        UserID       string `json:"userId"`
+        AccessToken  string `json:"accessToken"`
+        RefreshToken string `json:"refreshToken"`
+}
+
+type refreshTokenSessionDTO struct {
+        RefreshToken string `json:"refreshToken"`
+        UserID       string `json:"userId"`
+}
+
+func NewAuthService(
+        userRepo ports.UserRepository,
+        sessionManager ports.SessionManager,
+        tokenService ports.TokenService,
+) *AuthService <span class="cov8" title="1">{
+        return &amp;AuthService{
+                userRepo:       userRepo,
+                sessionManager: sessionManager,
+                tokenService:   tokenService,
+        }
+}</span>
+
+func (s *AuthService) Register(ctx context.Context, name, email, password string) (*domain.User, error) <span class="cov8" title="1">{
+        // Validate input
+        if !validator.ValidateRequired(name) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%w: name is required", domain.ErrRequestInvalid)
+        }</span>
+        <span class="cov8" title="1">if !validator.ValidateEmail(email) </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
+        }</span>
+        <span class="cov8" title="1">if !validator.ValidatePassword(password) </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%w: password must be at least 8 characters and include uppercase, lowercase, number, and special character", domain.ErrRequestInvalid)
+        }</span>
+
+        // Hash password
+        <span class="cov8" title="1">hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to hash password: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">user := &amp;domain.User{
+                Name:     name,
+                Email:    email,
+                Password: string(hashedPassword),
+        }
+
+        if err := s.userRepo.Create(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, error) <span class="cov8" title="1">{
+        user, err := s.userRepo.FindByEmail(ctx, email)
+        if err != nil </span><span class="cov8" title="1">{
+                if err == domain.ErrUserNotFound </span><span class="cov8" title="1">{
+                        return "", "", domain.ErrInvalidCredentials
+                }</span>
+                <span class="cov0" title="0">return "", "", err</span>
+        }
+
+        // Verify password
+        <span class="cov8" title="1">if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil </span><span class="cov8" title="1">{
+                return "", "", domain.ErrInvalidCredentials
+        }</span>
+
+        // Generate Access Token
+        <span class="cov8" title="1">accessToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getAccessTokenTTL())
+        if err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("failed to generate access token: %w", err)
+        }</span>
+
+        // Generate Refresh Token
+        <span class="cov8" title="1">refreshToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getRefreshTokenTTL())
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
+        }</span>
+
+        // Extract token IDs to store in Redis
+        <span class="cov8" title="1">accessClaims, _ := s.tokenService.ValidateToken(accessToken)
+        refreshClaims, _ := s.tokenService.ValidateToken(refreshToken)
+
+        accessSession := &amp;accessTokenSessionDTO{
+                UserID:       user.ID,
+                AccessToken:  accessToken,
+                RefreshToken: refreshClaims.Subject,
+        }
+        accessKey := fmt.Sprintf("access:%s", accessClaims.Subject)
+        if err := s.sessionManager.StoreSession(ctx, accessKey, accessSession, s.getAccessTokenTTL()); err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("failed to store access session: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">refreshSession := &amp;refreshTokenSessionDTO{
+                RefreshToken: refreshToken,
+                UserID:       user.ID,
+        }
+        refreshKey := fmt.Sprintf("refresh:%s", refreshClaims.Subject)
+        if err := s.sessionManager.StoreSession(ctx, refreshKey, refreshSession, s.getRefreshTokenTTL()); err != nil </span><span class="cov0" title="0">{
+                return "", "", fmt.Errorf("failed to store refresh session: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return accessToken, refreshToken, nil</span>
+}
+
+func (s *AuthService) Logout(ctx context.Context, token string) error <span class="cov8" title="1">{
+        // Validate token
+        claims, err := s.tokenService.ValidateToken(token)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">accessKey := fmt.Sprintf("access:%s", claims.Subject)
+        sessionJSON, _ := s.sessionManager.GetSession(ctx, accessKey)
+        if sessionJSON != "" </span><span class="cov8" title="1">{
+                var accessSession accessTokenSessionDTO
+                if err := json.Unmarshal([]byte(sessionJSON), &amp;accessSession); err == nil </span><span class="cov8" title="1">{
+                        if accessSession.RefreshToken != "" </span><span class="cov8" title="1">{
+                                refreshKey := fmt.Sprintf("refresh:%s", accessSession.RefreshToken)
+                                s.sessionManager.DeleteSession(ctx, refreshKey)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if err := s.sessionManager.DeleteSession(ctx, accessKey); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (s *AuthService) ValidateToken(ctx context.Context, token string) (*domain.TokenClaims, string, error) <span class="cov8" title="1">{
+        claims, err := s.tokenService.ValidateToken(token)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", err
+        }</span>
+
+        <span class="cov8" title="1">accessKey := fmt.Sprintf("access:%s", claims.Subject)
+        sessionJSON, err := s.sessionManager.GetSession(ctx, accessKey)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", err
+        }</span>
+        <span class="cov8" title="1">if sessionJSON == "" </span><span class="cov8" title="1">{
+                return nil, "", domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">var session accessTokenSessionDTO
+        if err := json.Unmarshal([]byte(sessionJSON), &amp;session); err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("failed to unmarshal session: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if session.AccessToken != token </span><span class="cov8" title="1">{
+                return nil, "", domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">if session.UserID == "" </span><span class="cov8" title="1">{
+                return nil, "", domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">return claims, session.UserID, nil</span>
+}
+
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (string, string, error) <span class="cov8" title="1">{
+        claims, err := s.tokenService.ValidateToken(refreshToken)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", "", domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">refreshKey := fmt.Sprintf("refresh:%s", claims.Subject)
+        sessionJSON, err := s.sessionManager.GetSession(ctx, refreshKey)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", err
+        }</span>
+        <span class="cov8" title="1">if sessionJSON == "" </span><span class="cov0" title="0">{
+                return "", "", domain.ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">var refreshSession refreshTokenSessionDTO
+        if err := json.Unmarshal([]byte(sessionJSON), &amp;refreshSession); err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("failed to unmarshal refresh session: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if refreshSession.RefreshToken != refreshToken </span><span class="cov0" title="0">{
+                return "", "", domain.ErrInvalidToken
+        }</span>
+        <span class="cov8" title="1">userID := refreshSession.UserID
+
+        user, err := s.userRepo.FindByID(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", err
+        }</span>
+
+        // Generate new tokens
+        <span class="cov8" title="1">newAccessToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getAccessTokenTTL())
+        if err != nil </span><span class="cov8" title="1">{
+                return "", "", err
+        }</span>
+        <span class="cov8" title="1">latestRefreshToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getRefreshTokenTTL())
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", err
+        }</span>
+
+        // Cleanup old sessions
+        <span class="cov8" title="1">s.sessionManager.DeleteSession(ctx, refreshKey)
+
+        newAccessClaims, _ := s.tokenService.ValidateToken(newAccessToken)
+        newRefreshClaims, _ := s.tokenService.ValidateToken(latestRefreshToken)
+
+        newAccessSession := &amp;accessTokenSessionDTO{
+                UserID:       user.ID,
+                AccessToken:  newAccessToken,
+                RefreshToken: newRefreshClaims.Subject,
+        }
+        newAccessKey := fmt.Sprintf("access:%s", newAccessClaims.Subject)
+        s.sessionManager.StoreSession(ctx, newAccessKey, newAccessSession, s.getAccessTokenTTL())
+
+        newRefreshSession := &amp;refreshTokenSessionDTO{
+                RefreshToken: latestRefreshToken,
+                UserID:       user.ID,
+        }
+        newRefreshKey := fmt.Sprintf("refresh:%s", newRefreshClaims.Subject)
+        s.sessionManager.StoreSession(ctx, newRefreshKey, newRefreshSession, s.getRefreshTokenTTL())
+
+        return newAccessToken, latestRefreshToken, nil</span>
+}
+
+func (s *AuthService) getAccessTokenTTL() time.Duration <span class="cov8" title="1">{
+        if ts, ok := s.tokenService.(*jwt.TokenService); ok </span><span class="cov0" title="0">{
+                return ts.GetAccessTokenDuration()
+        }</span>
+        <span class="cov8" title="1">return 15 * time.Minute</span>
+}
+
+func (s *AuthService) getRefreshTokenTTL() time.Duration <span class="cov8" title="1">{
+        if ts, ok := s.tokenService.(*jwt.TokenService); ok </span><span class="cov0" title="0">{
+                return ts.GetRefreshTokenDuration()
+        }</span>
+        <span class="cov8" title="1">return 30 * 24 * time.Hour</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package application
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/backend-challenge/user-api/internal/domain"
+        "github.com/backend-challenge/user-api/internal/ports"
+)
+
+type LotteryService struct {
+        repo ports.LotteryRepository
+}
+
+func NewLotteryService(repo ports.LotteryRepository) *LotteryService <span class="cov8" title="1">{
+        return &amp;LotteryService{
+                repo: repo,
+        }
+}</span>
+
+func (s *LotteryService) SearchLottery(ctx context.Context, pattern string, userID string) ([]domain.LotteryTicket, error) <span class="cov8" title="1">{
+        if len(pattern) != 6 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%w: pattern must be 6 characters", domain.ErrRequestInvalid)
+        }</span>
+
+        <span class="cov8" title="1">for _, char := range pattern </span><span class="cov8" title="1">{
+                if (char &lt; '0' || char &gt; '9') &amp;&amp; char != '*' </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("%w: pattern can only contain digits and *", domain.ErrRequestInvalid)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return s.repo.SearchAndReserve(ctx, pattern, userID, 10)</span> // limit 10
+}
+
+func (s *LotteryService) GetLotteryCount(ctx context.Context) (int64, error) <span class="cov8" title="1">{
+        return s.repo.Count(ctx)
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package application
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/backend-challenge/user-api/internal/domain"
+        "github.com/backend-challenge/user-api/internal/ports"
+        "github.com/backend-challenge/user-api/pkg/validator"
+        "golang.org/x/crypto/bcrypt"
+)
+
+type UserService struct {
+        repo ports.UserRepository
+}
+
+func NewUserService(repo ports.UserRepository) *UserService <span class="cov8" title="1">{
+        return &amp;UserService{
+                repo: repo,
+        }
+}</span>
+
+func (s *UserService) CreateUser(ctx context.Context, name, email, password string) (*domain.User, error) <span class="cov8" title="1">{
+        // Validate input
+        if !validator.ValidateRequired(name) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%w: name is required", domain.ErrRequestInvalid)
+        }</span>
+        <span class="cov8" title="1">if !validator.ValidateEmail(email) </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
+        }</span>
+        <span class="cov8" title="1">if !validator.ValidatePassword(password) </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%w: password must be at least 6 characters", domain.ErrRequestInvalid)
+        }</span>
+
+        // Hash password
+        <span class="cov8" title="1">hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to hash password: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">user := &amp;domain.User{
+                Name:     name,
+                Email:    email,
+                Password: string(hashedPassword),
+        }
+
+        if err := s.repo.Create(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+func (s *UserService) GetUserByID(ctx context.Context, id string) (*domain.User, error) <span class="cov8" title="1">{
+        return s.repo.FindByID(ctx, id)
+}</span>
+
+func (s *UserService) ListUsers(ctx context.Context) ([]*domain.User, error) <span class="cov8" title="1">{
+        return s.repo.FindAll(ctx)
+}</span>
+
+func (s *UserService) UpdateUser(ctx context.Context, id, name, email string) (*domain.User, error) <span class="cov8" title="1">{
+        if !validator.ValidateRequired(name) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%w: name is required", domain.ErrRequestInvalid)
+        }</span>
+        <span class="cov8" title="1">if !validator.ValidateEmail(email) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
+        }</span>
+
+        <span class="cov8" title="1">user, err := s.repo.FindByID(ctx, id)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">user.Name = name
+        user.Email = email
+
+        if err := s.repo.Update(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+func (s *UserService) DeleteUser(ctx context.Context, id string) error <span class="cov8" title="1">{
+        return s.repo.Delete(ctx, id)
+}</span>
+
+func (s *UserService) GetUserCount(ctx context.Context) (int64, error) <span class="cov8" title="1">{
+        return s.repo.Count(ctx)
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package domain
+
+type AppError struct {
+        Status  string
+        Message string
+}
+
+func (e *AppError) Error() string <span class="cov8" title="1">{
+        return e.Message
+}</span>
+
+func NewAppError(status, message string) *AppError <span class="cov8" title="1">{
+        return &amp;AppError{
+                Status:  status,
+                Message: message,
+        }
+}</span>
+
+var (
+        ErrUserNotFound       = NewAppError("USER_NOT_FOUND", "user not found")
+        ErrEmailAlreadyExists = NewAppError("EMAIL_EXISTS", "email already exists")
+        ErrInvalidCredentials = NewAppError("INVALID_CREDENTIALS", "invalid credentials")
+        ErrInvalidToken       = NewAppError("INVALID_TOKEN", "invalid token")
+        ErrTokenBlacklisted   = NewAppError("TOKEN_BLACKLISTED", "token has been blacklisted")
+        ErrRequestInvalid     = NewAppError("INVALID_INPUT", "request invalid")
+)
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package validator
+
+import (
+        "regexp"
+        "strings"
+)
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+
+// ValidateEmail checks if the email format is valid
+func ValidateEmail(email string) bool <span class="cov8" title="1">{
+        return emailRegex.MatchString(email)
+}</span>
+
+// ValidateRequired checks if a string field is not empty
+func ValidateRequired(value string) bool <span class="cov8" title="1">{
+        return strings.TrimSpace(value) != ""
+}</span>
+
+// ValidatePassword checks if password meets minimum requirements:
+// - At least 8 characters
+// - At least one uppercase letter
+// - At least one lowercase letter
+// - At least one digit
+// - At least one special character
+func ValidatePassword(password string) bool <span class="cov8" title="1">{
+        if len(password) &lt; 8 </span><span class="cov8" title="1">{
+                return false
+        }</span>
+
+        <span class="cov8" title="1">var (
+                hasUpper   = false
+                hasLower   = false
+                hasNumber  = false
+                hasSpecial = false
+        )
+
+        for _, char := range password </span><span class="cov8" title="1">{
+                switch </span>{
+                case 'a' &lt;= char &amp;&amp; char &lt;= 'z':<span class="cov8" title="1">
+                        hasLower = true</span>
+                case 'A' &lt;= char &amp;&amp; char &lt;= 'Z':<span class="cov8" title="1">
+                        hasUpper = true</span>
+                case '0' &lt;= char &amp;&amp; char &lt;= '9':<span class="cov8" title="1">
+                        hasNumber = true</span>
+                case strings.ContainsAny(string(char), "!@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?"):<span class="cov8" title="1">
+                        hasSpecial = true</span>
+                }
+        }
+
+        <span class="cov8" title="1">return hasUpper &amp;&amp; hasLower &amp;&amp; hasNumber &amp;&amp; hasSpecial</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
