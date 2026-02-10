@@ -20,6 +20,7 @@ type AuthService interface {
 	Login(ctx context.Context, email, password string) (string, string, error)
 	Logout(ctx context.Context, token string) error
 	ValidateToken(ctx context.Context, token string) (*domain.TokenClaims, string, error)
+	RefreshToken(ctx context.Context, refreshToken string) (string, string, error)
 }
 
 type LotteryService interface {

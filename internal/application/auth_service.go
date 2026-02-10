@@ -27,7 +27,7 @@ type accessTokenSessionDTO struct {
 
 type refreshTokenSessionDTO struct {
 	RefreshToken string `json:"refreshToken"`
-	AccessToken  string `json:"accessToken"`
+	UserID       string `json:"userId"`
 }
 
 func NewAuthService(
@@ -115,7 +115,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 
 	refreshSession := &refreshTokenSessionDTO{
 		RefreshToken: refreshToken,
-		AccessToken:  accessClaims.Subject,
+		UserID:       user.ID,
 	}
 	refreshKey := fmt.Sprintf("refresh:%s", refreshClaims.Subject)
 	if err := s.sessionManager.StoreSession(ctx, refreshKey, refreshSession, s.getRefreshTokenTTL()); err != nil {
@@ -180,6 +180,70 @@ func (s *AuthService) ValidateToken(ctx context.Context, token string) (*domain.
 	}
 
 	return claims, session.UserID, nil
+}
+
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
+	claims, err := s.tokenService.ValidateToken(refreshToken)
+	if err != nil {
+		return "", "", domain.ErrInvalidToken
+	}
+
+	refreshKey := fmt.Sprintf("refresh:%s", claims.Subject)
+	sessionJSON, err := s.sessionManager.GetSession(ctx, refreshKey)
+	if err != nil {
+		return "", "", err
+	}
+	if sessionJSON == "" {
+		return "", "", domain.ErrInvalidToken
+	}
+
+	var refreshSession refreshTokenSessionDTO
+	if err := json.Unmarshal([]byte(sessionJSON), &refreshSession); err != nil {
+		return "", "", fmt.Errorf("failed to unmarshal refresh session: %w", err)
+	}
+
+	if refreshSession.RefreshToken != refreshToken {
+		return "", "", domain.ErrInvalidToken
+	}
+	userID := refreshSession.UserID
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Generate new tokens
+	newAccessToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getAccessTokenTTL())
+	if err != nil {
+		return "", "", err
+	}
+	latestRefreshToken, err := s.tokenService.GenerateToken(user.ID, user.Email, s.getRefreshTokenTTL())
+	if err != nil {
+		return "", "", err
+	}
+
+	// Cleanup old sessions
+	s.sessionManager.DeleteSession(ctx, refreshKey)
+
+	newAccessClaims, _ := s.tokenService.ValidateToken(newAccessToken)
+	newRefreshClaims, _ := s.tokenService.ValidateToken(latestRefreshToken)
+
+	newAccessSession := &accessTokenSessionDTO{
+		UserID:       user.ID,
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshClaims.Subject,
+	}
+	newAccessKey := fmt.Sprintf("access:%s", newAccessClaims.Subject)
+	s.sessionManager.StoreSession(ctx, newAccessKey, newAccessSession, s.getAccessTokenTTL())
+
+	newRefreshSession := &refreshTokenSessionDTO{
+		RefreshToken: latestRefreshToken,
+		UserID:       user.ID,
+	}
+	newRefreshKey := fmt.Sprintf("refresh:%s", newRefreshClaims.Subject)
+	s.sessionManager.StoreSession(ctx, newRefreshKey, newRefreshSession, s.getRefreshTokenTTL())
+
+	return newAccessToken, latestRefreshToken, nil
 }
 
 func (s *AuthService) getAccessTokenTTL() time.Duration {
