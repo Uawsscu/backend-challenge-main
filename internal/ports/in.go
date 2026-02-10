@@ -6,7 +6,6 @@ import (
 	"github.com/backend-challenge/user-api/internal/domain"
 )
 
-// UserService defines the primary logic for user management (Driving Port)
 type UserService interface {
 	CreateUser(ctx context.Context, name, email, password string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id string) (*domain.User, error)
@@ -16,7 +15,6 @@ type UserService interface {
 	GetUserCount(ctx context.Context) (int64, error)
 }
 
-// AuthService defines the primary logic for authentication (Driving Port)
 type AuthService interface {
 	Register(ctx context.Context, name, email, password string) (*domain.User, error)
 	Login(ctx context.Context, email, password string) (string, string, *domain.User, error)

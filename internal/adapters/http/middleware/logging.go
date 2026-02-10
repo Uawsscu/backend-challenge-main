@@ -11,13 +11,10 @@ func LoggingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 
-		// Process request
 		c.Next()
 
-		// Calculate execution time
 		duration := time.Since(startTime)
 
-		// Log request details
 		logger.Info("HTTP Request", map[string]interface{}{
 			"method":      c.Request.Method,
 			"path":        c.Request.URL.Path,

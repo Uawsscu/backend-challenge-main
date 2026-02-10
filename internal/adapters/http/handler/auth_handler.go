@@ -37,7 +37,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		if err == domain.ErrEmailAlreadyExists {
 			statusCode = http.StatusConflict
 			errorType = "email_exists"
-		} else if err == domain.ErrInvalidInput {
+		} else if err == domain.ErrRequestInvalid {
 			statusCode = http.StatusBadRequest
 			errorType = "invalid_input"
 		}

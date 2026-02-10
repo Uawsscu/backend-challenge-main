@@ -19,6 +19,17 @@ type AuthService struct {
 	tokenService   ports.TokenService
 }
 
+type accessTokenSessionDTO struct {
+	UserID       string `json:"userId"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+type refreshTokenSessionDTO struct {
+	RefreshToken string `json:"refreshToken"`
+	AccessToken  string `json:"accessToken"`
+}
+
 func NewAuthService(
 	userRepo ports.UserRepository,
 	sessionManager ports.SessionManager,
@@ -34,13 +45,13 @@ func NewAuthService(
 func (s *AuthService) Register(ctx context.Context, name, email, password string) (*domain.User, error) {
 	// Validate input
 	if !validator.ValidateRequired(name) {
-		return nil, fmt.Errorf("%w: name is required", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: name is required", domain.ErrRequestInvalid)
 	}
 	if !validator.ValidateEmail(email) {
-		return nil, fmt.Errorf("%w: invalid email format", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
 	}
 	if !validator.ValidatePassword(password) {
-		return nil, fmt.Errorf("%w: password must be at least 6 characters", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: password must be at least 6 characters", domain.ErrRequestInvalid)
 	}
 
 	// Hash password
@@ -63,7 +74,6 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 }
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, *domain.User, error) {
-	// Find user by email
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
@@ -93,8 +103,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	accessClaims, _ := s.tokenService.ValidateToken(accessToken)
 	refreshClaims, _ := s.tokenService.ValidateToken(refreshToken)
 
-	// Store Access Token Session
-	accessSession := &domain.AccessTokenSession{
+	accessSession := &accessTokenSessionDTO{
 		UserID:       user.ID,
 		AccessToken:  accessToken,
 		RefreshToken: refreshClaims.Subject,
@@ -104,8 +113,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", "", nil, fmt.Errorf("failed to store access session: %w", err)
 	}
 
-	// Store Refresh Token Session
-	refreshSession := &domain.RefreshTokenSession{
+	refreshSession := &refreshTokenSessionDTO{
 		RefreshToken: refreshToken,
 		AccessToken:  accessClaims.Subject,
 	}
@@ -124,13 +132,11 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 		return err
 	}
 
-	// Try to get session data to find linked token
 	accessKey := fmt.Sprintf("access:%s", claims.Subject)
 	sessionJSON, _ := s.sessionManager.GetSession(ctx, accessKey)
 	if sessionJSON != "" {
-		var accessSession domain.AccessTokenSession
+		var accessSession accessTokenSessionDTO
 		if err := json.Unmarshal([]byte(sessionJSON), &accessSession); err == nil {
-			// Delete linked refresh token session
 			if accessSession.RefreshToken != "" {
 				refreshKey := fmt.Sprintf("refresh:%s", accessSession.RefreshToken)
 				s.sessionManager.DeleteSession(ctx, refreshKey)
@@ -138,12 +144,10 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 		}
 	}
 
-	// Delete current session from Redis
 	if err := s.sessionManager.DeleteSession(ctx, accessKey); err != nil {
 		return err
 	}
 
-	// Blacklist current token
 	if err := s.sessionManager.BlacklistToken(ctx, claims.Subject, s.getAccessTokenTTL()); err != nil {
 		return err
 	}
@@ -152,13 +156,11 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 }
 
 func (s *AuthService) ValidateToken(ctx context.Context, token string) (*domain.TokenClaims, string, error) {
-	// Validate JWT token (opaque check)
 	claims, err := s.tokenService.ValidateToken(token)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Check if token is blacklisted in Redis
 	blacklisted, err := s.sessionManager.IsTokenBlacklisted(ctx, claims.Subject)
 	if err != nil {
 		return nil, "", err
@@ -167,7 +169,6 @@ func (s *AuthService) ValidateToken(ctx context.Context, token string) (*domain.
 		return nil, "", domain.ErrTokenBlacklisted
 	}
 
-	// Get corresponding session data from Redis using Subject
 	accessKey := fmt.Sprintf("access:%s", claims.Subject)
 	sessionJSON, err := s.sessionManager.GetSession(ctx, accessKey)
 	if err != nil {
@@ -177,12 +178,11 @@ func (s *AuthService) ValidateToken(ctx context.Context, token string) (*domain.
 		return nil, "", domain.ErrInvalidToken
 	}
 
-	var session domain.AccessTokenSession
+	var session accessTokenSessionDTO
 	if err := json.Unmarshal([]byte(sessionJSON), &session); err != nil {
 		return nil, "", fmt.Errorf("failed to unmarshal session: %w", err)
 	}
 
-	// Strict Token Verification: Compare the full token string
 	if session.AccessToken != token {
 		return nil, "", domain.ErrInvalidToken
 	}

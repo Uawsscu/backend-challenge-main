@@ -22,7 +22,6 @@ func AuthMiddleware(authService ports.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		// Extract token from "Bearer <token>"
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
@@ -35,7 +34,6 @@ func AuthMiddleware(authService ports.AuthService) gin.HandlerFunc {
 
 		token := parts[1]
 
-		// Validate token
 		_, userID, err := authService.ValidateToken(c.Request.Context(), token)
 		if err != nil {
 			statusCode := http.StatusUnauthorized
@@ -53,7 +51,6 @@ func AuthMiddleware(authService ports.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		// Set user info in context
 		c.Set("user_id", userID)
 
 		c.Next()

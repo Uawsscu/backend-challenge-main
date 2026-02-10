@@ -19,7 +19,6 @@ type UserRepository struct {
 func NewUserRepository(db *mongo.Database) *UserRepository {
 	collection := db.Collection("users")
 
-	// Create unique index on email
 	indexModel := mongo.IndexModel{
 		Keys:    bson.D{{Key: "email", Value: 1}},
 		Options: options.Index().SetUnique(true),
@@ -37,7 +36,8 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	}
 	user.CreatedAt = time.Now()
 
-	_, err := r.collection.InsertOne(ctx, user)
+	doc := fromDomain(user)
+	_, err := r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			return domain.ErrEmailAlreadyExists
@@ -49,8 +49,8 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {
-	var user domain.User
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
+	var doc userDoc
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&doc)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, domain.ErrUserNotFound
@@ -58,12 +58,12 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*domain.User,
 		return nil, err
 	}
 
-	return &user, nil
+	return doc.toDomain(), nil
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	var user domain.User
-	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	var doc userDoc
+	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&doc)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, domain.ErrUserNotFound
@@ -71,7 +71,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domain
 		return nil, err
 	}
 
-	return &user, nil
+	return doc.toDomain(), nil
 }
 
 func (r *UserRepository) FindAll(ctx context.Context) ([]*domain.User, error) {
@@ -81,9 +81,14 @@ func (r *UserRepository) FindAll(ctx context.Context) ([]*domain.User, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var users []*domain.User
-	if err := cursor.All(ctx, &users); err != nil {
+	var docs []*userDoc
+	if err := cursor.All(ctx, &docs); err != nil {
 		return nil, err
+	}
+
+	users := make([]*domain.User, len(docs))
+	for i, doc := range docs {
+		users[i] = doc.toDomain()
 	}
 
 	return users, nil
