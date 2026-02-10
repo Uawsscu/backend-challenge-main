@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/backend-challenge/user-api/internal/application"
+	"github.com/backend-challenge/user-api/internal/adapters/http/dto"
 	"github.com/backend-challenge/user-api/internal/domain"
-	"github.com/backend-challenge/user-api/internal/interfaces/dto"
+	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(authService *application.AuthService) gin.HandlerFunc {
+func AuthMiddleware(authService ports.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

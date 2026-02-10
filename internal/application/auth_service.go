@@ -6,22 +6,23 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/backend-challenge/user-api/internal/adapters/jwt"
 	"github.com/backend-challenge/user-api/internal/domain"
-	"github.com/backend-challenge/user-api/internal/infrastructure/jwt"
+	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/backend-challenge/user-api/pkg/validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	userRepo       domain.UserRepository
-	sessionManager domain.SessionManager
-	tokenService   domain.TokenService
+	userRepo       ports.UserRepository
+	sessionManager ports.SessionManager
+	tokenService   ports.TokenService
 }
 
 func NewAuthService(
-	userRepo domain.UserRepository,
-	sessionManager domain.SessionManager,
-	tokenService domain.TokenService,
+	userRepo ports.UserRepository,
+	sessionManager ports.SessionManager,
+	tokenService ports.TokenService,
 ) *AuthService {
 	return &AuthService{
 		userRepo:       userRepo,

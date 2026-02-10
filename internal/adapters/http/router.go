@@ -1,15 +1,15 @@
 package http
 
 import (
-	"github.com/backend-challenge/user-api/internal/application"
-	"github.com/backend-challenge/user-api/internal/interfaces/http/handler"
-	"github.com/backend-challenge/user-api/internal/interfaces/http/middleware"
+	"github.com/backend-challenge/user-api/internal/adapters/http/handler"
+	"github.com/backend-challenge/user-api/internal/adapters/http/middleware"
+	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter(
-	userService *application.UserService,
-	authService *application.AuthService,
+	userService ports.UserService,
+	authService ports.AuthService,
 ) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())

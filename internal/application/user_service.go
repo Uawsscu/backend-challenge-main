@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"github.com/backend-challenge/user-api/internal/domain"
+	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/backend-challenge/user-api/pkg/validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
-	repo domain.UserRepository
+	repo ports.UserRepository
 }
 
-func NewUserService(repo domain.UserRepository) *UserService {
+func NewUserService(repo ports.UserRepository) *UserService {
 	return &UserService{
 		repo: repo,
 	}

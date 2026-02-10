@@ -3,17 +3,17 @@ package handler
 import (
 	"net/http"
 
-	"github.com/backend-challenge/user-api/internal/application"
+	"github.com/backend-challenge/user-api/internal/adapters/http/dto"
 	"github.com/backend-challenge/user-api/internal/domain"
-	"github.com/backend-challenge/user-api/internal/interfaces/dto"
+	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
-	userService *application.UserService
+	userService ports.UserService
 }
 
-func NewUserHandler(userService *application.UserService) *UserHandler {
+func NewUserHandler(userService ports.UserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}
