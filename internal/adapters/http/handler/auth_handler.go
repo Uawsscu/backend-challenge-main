@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/backend-challenge/user-api/internal/adapters/http/dto"
-	"github.com/backend-challenge/user-api/internal/domain"
 	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/gin-gonic/gin"
 )
@@ -31,21 +30,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	user, err := h.authService.Register(c.Request.Context(), req.Name, req.Email, req.Password)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		errorType := "internal_error"
-
-		if err == domain.ErrEmailAlreadyExists {
-			statusCode = http.StatusConflict
-			errorType = "email_exists"
-		} else if err == domain.ErrRequestInvalid {
-			statusCode = http.StatusBadRequest
-			errorType = "invalid_input"
-		}
-
-		c.JSON(statusCode, dto.ErrorResponse{
-			Error:   errorType,
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 
@@ -69,18 +54,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	accessToken, refreshToken, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		errorType := "internal_error"
-
-		if err == domain.ErrInvalidCredentials {
-			statusCode = http.StatusUnauthorized
-			errorType = "invalid_credentials"
-		}
-
-		c.JSON(statusCode, dto.ErrorResponse{
-			Error:   errorType,
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 
@@ -112,10 +86,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	if err := h.authService.Logout(c.Request.Context(), token); err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error:   "internal_error",
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/backend-challenge/user-api/internal/adapters/http/dto"
-	"github.com/backend-challenge/user-api/internal/domain"
 	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/gin-gonic/gin"
 )
@@ -31,21 +30,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 	user, err := h.userService.CreateUser(c.Request.Context(), req.Name, req.Email, req.Password)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		errorType := "internal_error"
-
-		if err == domain.ErrEmailAlreadyExists {
-			statusCode = http.StatusConflict
-			errorType = "email_exists"
-		} else if err == domain.ErrRequestInvalid {
-			statusCode = http.StatusBadRequest
-			errorType = "invalid_input"
-		}
-
-		c.JSON(statusCode, dto.ErrorResponse{
-			Error:   errorType,
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 
@@ -62,18 +47,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 
 	user, err := h.userService.GetUserByID(c.Request.Context(), id)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		errorType := "internal_error"
-
-		if err == domain.ErrUserNotFound {
-			statusCode = http.StatusNotFound
-			errorType = "user_not_found"
-		}
-
-		c.JSON(statusCode, dto.ErrorResponse{
-			Error:   errorType,
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 
@@ -88,10 +62,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, err := h.userService.ListUsers(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error:   "internal_error",
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 
@@ -122,24 +93,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	user, err := h.userService.UpdateUser(c.Request.Context(), id, req.Name, req.Email)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		errorType := "internal_error"
-
-		if err == domain.ErrUserNotFound {
-			statusCode = http.StatusNotFound
-			errorType = "user_not_found"
-		} else if err == domain.ErrEmailAlreadyExists {
-			statusCode = http.StatusConflict
-			errorType = "email_exists"
-		} else if err == domain.ErrRequestInvalid {
-			statusCode = http.StatusBadRequest
-			errorType = "invalid_input"
-		}
-
-		c.JSON(statusCode, dto.ErrorResponse{
-			Error:   errorType,
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 
@@ -155,18 +109,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.userService.DeleteUser(c.Request.Context(), id); err != nil {
-		statusCode := http.StatusInternalServerError
-		errorType := "internal_error"
-
-		if err == domain.ErrUserNotFound {
-			statusCode = http.StatusNotFound
-			errorType = "user_not_found"
-		}
-
-		c.JSON(statusCode, dto.ErrorResponse{
-			Error:   errorType,
-			Message: err.Error(),
-		})
+		c.Error(err)
 		return
 	}
 

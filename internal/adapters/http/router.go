@@ -14,6 +14,7 @@ func SetupRouter(
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.LoggingMiddleware())
+	router.Use(middleware.ErrorHandler())
 
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
