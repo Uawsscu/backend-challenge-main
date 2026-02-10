@@ -38,7 +38,13 @@ docker-compose up -d
 
 ## 4. ตัวอย่าง API Request และ Response
 
-คุณสามารถนำเข้าไฟล์ [Backend-Challenge.postman_collection.json](Backend-Challenge.postman_collection.json) เข้าสู่ Postman เพื่อดูตัวอย่าง API ทั้งหมดและทดสอบได้ทันที
+คุณสามารถนำเข้าไฟล์ [Backend-Challenge.postman_collection.json](Backend-Challenge.postman_collection.json) เข้าสู่ Postman เพื่อดูตัวอย่าง API ทั้งหมดและทดสอบได้ทันที 
+![alt text](image.png)
+หรือดูคู่มือการใช้งานแบบละเอียดได้ที่:
+
+- [📄 Auth API Specification (PDF)](api-spec-auth.pdf)
+- [📄 User Management API Specification (PDF)](api-spec-user.pdf)
+- [📄 Lottery Search API Specification (PDF)](api-spec-lottery.pdf)
 
 
 ## 5. Assumptions และ Design Decisions
