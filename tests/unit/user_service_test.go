@@ -41,7 +41,7 @@ func TestUserService_CreateUser(t *testing.T) {
 			password:    "password123",
 			mockSetup:   func(repo *mocks.MockUserRepository) {},
 			expectError: true,
-			errorType:   domain.ErrInvalidInput,
+			errorType:   domain.ErrRequestInvalid,
 		},
 		{
 			name:        "password too short",
@@ -50,7 +50,7 @@ func TestUserService_CreateUser(t *testing.T) {
 			password:    "12345",
 			mockSetup:   func(repo *mocks.MockUserRepository) {},
 			expectError: true,
-			errorType:   domain.ErrInvalidInput,
+			errorType:   domain.ErrRequestInvalid,
 		},
 		{
 			name:     "email already exists",

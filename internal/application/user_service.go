@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"github.com/backend-challenge/user-api/internal/domain"
+	"github.com/backend-challenge/user-api/internal/ports"
 	"github.com/backend-challenge/user-api/pkg/validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
-	repo domain.UserRepository
+	repo ports.UserRepository
 }
 
-func NewUserService(repo domain.UserRepository) *UserService {
+func NewUserService(repo ports.UserRepository) *UserService {
 	return &UserService{
 		repo: repo,
 	}
@@ -22,13 +23,13 @@ func NewUserService(repo domain.UserRepository) *UserService {
 func (s *UserService) CreateUser(ctx context.Context, name, email, password string) (*domain.User, error) {
 	// Validate input
 	if !validator.ValidateRequired(name) {
-		return nil, fmt.Errorf("%w: name is required", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: name is required", domain.ErrRequestInvalid)
 	}
 	if !validator.ValidateEmail(email) {
-		return nil, fmt.Errorf("%w: invalid email format", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
 	}
 	if !validator.ValidatePassword(password) {
-		return nil, fmt.Errorf("%w: password must be at least 6 characters", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: password must be at least 6 characters", domain.ErrRequestInvalid)
 	}
 
 	// Hash password
@@ -59,21 +60,18 @@ func (s *UserService) ListUsers(ctx context.Context) ([]*domain.User, error) {
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, id, name, email string) (*domain.User, error) {
-	// Validate input
 	if !validator.ValidateRequired(name) {
-		return nil, fmt.Errorf("%w: name is required", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: name is required", domain.ErrRequestInvalid)
 	}
 	if !validator.ValidateEmail(email) {
-		return nil, fmt.Errorf("%w: invalid email format", domain.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: invalid email format", domain.ErrRequestInvalid)
 	}
 
-	// Check if user exists
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update fields
 	user.Name = name
 	user.Email = email
 

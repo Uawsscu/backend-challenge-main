@@ -67,11 +67,9 @@ func (m *MockUserRepository) Count(ctx context.Context) (int64, error) {
 }
 
 type MockSessionManager struct {
-	StoreSessionFunc       func(ctx context.Context, key string, data interface{}, ttl time.Duration) error
-	GetSessionFunc         func(ctx context.Context, key string) (string, error)
-	DeleteSessionFunc      func(ctx context.Context, key string) error
-	BlacklistTokenFunc     func(ctx context.Context, tokenID string, ttl time.Duration) error
-	IsTokenBlacklistedFunc func(ctx context.Context, tokenID string) (bool, error)
+	StoreSessionFunc  func(ctx context.Context, key string, data interface{}, ttl time.Duration) error
+	GetSessionFunc    func(ctx context.Context, key string) (string, error)
+	DeleteSessionFunc func(ctx context.Context, key string) error
 }
 
 func (m *MockSessionManager) StoreSession(ctx context.Context, key string, data interface{}, ttl time.Duration) error {
@@ -93,20 +91,6 @@ func (m *MockSessionManager) DeleteSession(ctx context.Context, key string) erro
 		return m.DeleteSessionFunc(ctx, key)
 	}
 	return nil
-}
-
-func (m *MockSessionManager) BlacklistToken(ctx context.Context, tokenID string, ttl time.Duration) error {
-	if m.BlacklistTokenFunc != nil {
-		return m.BlacklistTokenFunc(ctx, tokenID, ttl)
-	}
-	return nil
-}
-
-func (m *MockSessionManager) IsTokenBlacklisted(ctx context.Context, tokenID string) (bool, error) {
-	if m.IsTokenBlacklistedFunc != nil {
-		return m.IsTokenBlacklistedFunc(ctx, tokenID)
-	}
-	return false, nil
 }
 
 type MockTokenService struct {

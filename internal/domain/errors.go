@@ -1,23 +1,26 @@
 package domain
 
-import "errors"
+type AppError struct {
+	Status  string
+	Message string
+}
+
+func (e *AppError) Error() string {
+	return e.Message
+}
+
+func NewAppError(status, message string) *AppError {
+	return &AppError{
+		Status:  status,
+		Message: message,
+	}
+}
 
 var (
-	// ErrUserNotFound is returned when a user is not found
-	ErrUserNotFound = errors.New("user not found")
-
-	// ErrEmailAlreadyExists is returned when trying to create a user with an existing email
-	ErrEmailAlreadyExists = errors.New("email already exists")
-
-	// ErrInvalidCredentials is returned when login credentials are invalid
-	ErrInvalidCredentials = errors.New("invalid credentials")
-
-	// ErrInvalidToken is returned when JWT token is invalid
-	ErrInvalidToken = errors.New("invalid token")
-
-	// ErrTokenBlacklisted is returned when token has been blacklisted
-	ErrTokenBlacklisted = errors.New("token has been blacklisted")
-
-	// ErrInvalidInput is returned when input validation fails
-	ErrInvalidInput = errors.New("invalid input")
+	ErrUserNotFound       = NewAppError("USER_NOT_FOUND", "user not found")
+	ErrEmailAlreadyExists = NewAppError("EMAIL_EXISTS", "email already exists")
+	ErrInvalidCredentials = NewAppError("INVALID_CREDENTIALS", "invalid credentials")
+	ErrInvalidToken       = NewAppError("INVALID_TOKEN", "invalid token")
+	ErrTokenBlacklisted   = NewAppError("TOKEN_BLACKLISTED", "token has been blacklisted")
+	ErrRequestInvalid     = NewAppError("INVALID_INPUT", "request invalid")
 )
