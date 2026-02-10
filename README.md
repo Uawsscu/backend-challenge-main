@@ -54,3 +54,23 @@ docker-compose up -d
 - **Redis**: ใช้จัดการ Session ของ JWT (Token Blacklisting/Revocation) และช่วยในการจัดการลำดับ Ticket ลอตเตอรี่ (Atomic Allocation)
 - **Security**: รหัสผ่านถูกเข้ารหัสด้วย `bcrypt` ก่อนเก็บลงฐานข้อมูล และใช้ JWT ในการยืนยันตัวตน (Stateless Auth)
 - **Graceful Shutdown**: ระบบรองรับการปิดตัวอย่างปลอดภัยเพื่อจัดการงานที่ค้างอยู่
+ 
+## 6. อธิบายการทำงานของ Lottery Search
+
+### 1. แนวคิดหลัก (Core Concept)
+ระบบใช้กลไก **Hybrid Caching & Atomic Selection** โดยดึงเลขจาก **Redis (Memory)** เป็นอันดับแรกเพื่อความเร็ว และสำรองด้วย **MongoDB** เพื่อความถูกต้องแม่นยำ ป้องกันการจองเลขซ้ำ (Race Condition) ได้ 100%
+
+### 2. โครงสร้างข้อมูล (Data Structure)
+- **MongoDB**: เป็นแหล่งข้อมูลหลัก (Single Source of Truth) เก็บสถานะลอตเตอรี่ทั้งหมด มี Index ที่ `number` และ `status`
+- **Redis (Set)**: เก็บ "Pool" ของเอกสารลอตเตอรี่ที่ว่าง (Available) แยกตาม Pattern (เช่น `lottery_pattern:****23`) เพื่อให้ดึงไปใช้งานได้ทันทีไม่ต้องรอค้นหาใน DB ใหญ่
+
+### 3. อัลกอริทึม (Algorithm)
+1. **Redis SPop**: ดึงเลขจากความจำ Redis ตาม Pattern ที่ระบุ (ดึงออกแล้วลบทันทีแบบ Atomic คนที่ดึงได้จึงได้เลขนั้นไปคนเดียวแน่นอน)
+2. **DB Sync**: อัปเดตสถานะใน MongoDB ทันทีหลังดึงจาก Redis ได้
+3. **Fallback**: หาก Redis Pool ว่าง ระบบจะทำ Regex Search ใน MongoDB และทำการจอง (FindOneAndUpdate) ทันที
+4. **Background Prefill**: เมื่อมีการค้นหา ระบบจะเริ่ม Goroutine เติมเลขลง Redis Pool อัตโนมัติ เพื่อรองรับการค้นหาครั้งต่อไป
+
+### 4. วิเคราะห์ประสิทธิภาพ (Efficiency)
+- **ความเร็ว**: การดึงจาก Redis เร็วกว่าการทำ Regex Search ใน DB ทั่วไปมาก
+- **การขยายตัว**: รองรับผู้ใช้จำนวนมากพร้อมกันได้ดีเยี่ยม เพราะลดภาระงานของ MongoDB ไปที่ Redis
+
