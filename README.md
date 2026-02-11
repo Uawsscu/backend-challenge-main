@@ -35,6 +35,13 @@ docker-compose up -d
    `Authorization: Bearer <accessToken>`
 3. **การต่ออายุ Token**: เมื่อ Access Token หมดอายุ ให้ส่ง `refreshToken` ไปยัง `/api/v1/auth/refresh`
 
+### 3.1 ความปลอดภัย (Security Features)
+1. **Opaque Token**: JWT Payload เก็บเพียง ID ที่ไม่มีข้อมูลส่วนตัว (User ID, Email) ฝังอยู่เพื่อความปลอดภัย
+2. **Stateful Validation**: ตรวจสอบสถานะ Token กับ Redis ทุก Request ทำให้สามารถระงับการใช้งาน Token ได้ทันที (เช่น กรณี Logout)
+3. **Token Rotation**: เมื่อ Refresh Token ถูกใช้งาน ระบบจะสร้างคู่ Token ใหม่ (Access + Refresh) และยกเลิกคู่เดิมทันที เพื่อป้องกัน Replay Attack (หากมีการนำ Refresh Token เก่ามาใช้ซ้ำ ระบบจะปฏิเสธสิทธิ์และบังคับให้ผู้ใช้เข้าสู่ระบบใหม่)
+4. **Strong Signing**: ใช้ Algorithm `HS256` พร้อม Secret Key ที่แข็งแกร่ง
+5. **Token Validity**: Access Token มีอายุ 15 นาที ส่วน Refresh Token มีอายุ 30 วัน (และจะได้รับใบใหม่ที่มีอายุ 30 วันทุกครั้งที่ทำ Token Rotation)
+
 
 ## 4. ตัวอย่าง API Request และ Response
 
@@ -51,14 +58,14 @@ docker-compose up -d
 
 - **Hexagonal Architecture**: แยก Logic ออกจากส่วนติดต่อภายนอก (HTTP, Database) เพื่อให้ง่ายต่อการทดสอบและเปลี่ยนเทคโนโลยีในอนาคต
 - **MongoDB**: ใช้เก็บข้อมูลผู้ใช้และลอตเตอรี่ เนื่องจากขยายตัวได้ง่าย (Scalable)
-- **Redis**: ใช้จัดการ Session ของ JWT (Token Blacklisting/Revocation) และช่วยในการจัดการลำดับ Ticket ลอตเตอรี่ (Atomic Allocation)
-- **Security**: รหัสผ่านถูกเข้ารหัสด้วย `bcrypt` ก่อนเก็บลงฐานข้อมูล และใช้ JWT ในการยืนยันตัวตน (Stateless Auth)
+- **Redis**: ใช้จัดการ Session ของ JWT และช่วยในการจัดการลำดับ Ticket ลอตเตอรี่ (Atomic Allocation)
+- **Security**: รหัสผ่านถูกเข้ารหัสด้วย `bcrypt` ก่อนเก็บลงฐานข้อมูล และใช้ JWT ในการยืนยันตัวตน
 - **Graceful Shutdown**: ระบบรองรับการปิดตัวอย่างปลอดภัยเพื่อจัดการงานที่ค้างอยู่
  
 ## 6. อธิบายการทำงานของ Lottery Search
 
 ### 1. แนวคิดหลัก (Core Concept)
-ระบบใช้กลไก **Hybrid Caching & Atomic Selection** โดยดึงเลขจาก **Redis (Memory)** เป็นอันดับแรกเพื่อความเร็ว และสำรองด้วย **MongoDB** เพื่อความถูกต้องแม่นยำ ป้องกันการจองเลขซ้ำ (Race Condition) ได้ 100%
+ระบบใช้กลไก **Hybrid Caching & Atomic Selection** โดยดึงเลขจาก **Redis (Memory)** เป็นอันดับแรกเพื่อความเร็ว และสำรองด้วย **MongoDB** เพื่อความถูกต้องแม่นยำ ป้องกันการจองเลขซ้ำได้ 100%
 
 ### 2. โครงสร้างข้อมูล (Data Structure)
 - **MongoDB**: เป็นแหล่งข้อมูลหลัก (Single Source of Truth) เก็บสถานะลอตเตอรี่ทั้งหมด มี Index ที่ `number` และ `status`
